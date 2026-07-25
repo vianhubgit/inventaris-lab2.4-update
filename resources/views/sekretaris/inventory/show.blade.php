@@ -4,7 +4,7 @@
 @section('page-title', $item->nama)
 
 @section('actions')
-    <a href="{{ route('sekretaris.inventory.index') }}" class="btn-secondary">Kembali</a>
+    <a href="{{ url()->previous(route('sekretaris.inventory.index')) }}" class="btn-secondary">Kembali</a>
     <a href="{{ route('sekretaris.reports.create', ['type' => 'rusak']) }}" class="btn-warning">Laporkan</a>
 @endsection
 

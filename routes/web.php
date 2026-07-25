@@ -37,7 +37,9 @@ Route::middleware('auth')->group(function () {
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/feed', [NotificationController::class, 'feed'])->name('notifications.feed');
     Route::post('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.readAll');
+    Route::delete('/notifications/clear', [NotificationController::class, 'clear'])->name('notifications.clear');
     Route::get('/notifications/{id}', [NotificationController::class, 'read'])->name('notifications.read');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
 });
 
 /*
@@ -56,6 +58,11 @@ Route::middleware(['auth', 'role:admin'])
 
         // Master: Kategori
         Route::resource('categories', Admin\CategoryController::class)->except('show');
+
+        // Master: Kelas peminjam
+        Route::resource('kelas', Admin\KelasController::class)
+            ->parameters(['kelas' => 'kelas'])
+            ->except('show');
 
         // Master: Tata Letak Lab
         Route::resource('labs', Admin\LabController::class);
@@ -98,6 +105,10 @@ Route::middleware(['auth', 'role:admin'])
         Route::get('export/reports/pdf', [Admin\ExportController::class, 'reportsPdf'])->name('export.reports.pdf');
 	Route::get('export/procurements/excel', [Admin\ExportController::class, 'procurementsExcel'])->name('export.procurements.excel');
 	Route::get('export/procurements/pdf', [Admin\ExportController::class, 'procurementsPdf'])->name('export.procurements.pdf');
+        Route::get('export/repairs/excel', [Admin\ExportController::class, 'repairsExcel'])->name('export.repairs.excel');
+        Route::get('export/repairs/pdf', [Admin\ExportController::class, 'repairsPdf'])->name('export.repairs.pdf');
+        Route::get('export/audits/excel', [Admin\ExportController::class, 'auditsExcel'])->name('export.audits.excel');
+        Route::get('export/audits/pdf', [Admin\ExportController::class, 'auditsPdf'])->name('export.audits.pdf');
     });
 
 /*

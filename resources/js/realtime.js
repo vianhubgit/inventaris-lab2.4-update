@@ -12,7 +12,7 @@ export function initRealtimeNotifications() {
     const list = root.querySelector('[data-notif-list]');
     if (!feedUrl || !badge || !list) return;
 
-    const INTERVAL = 20000; // 20 detik — aman untuk LAN
+    const INTERVAL = 8000; // 8 detik — terasa realtime, tetap ringan untuk LAN
 
     const renderBadge = (count) => {
         if (count > 0) {
@@ -79,7 +79,9 @@ export function initRealtimeNotifications() {
         }
     };
 
-    // Polling berkala; berhenti sementara saat tab tidak aktif untuk hemat sumber daya.
+    // Ambil segera saat halaman dimuat agar notifikasi baru langsung tampak,
+    // lalu polling berkala; berhenti sementara saat tab tidak aktif untuk hemat sumber daya.
+    poll();
     let timer = setInterval(poll, INTERVAL);
     document.addEventListener('visibilitychange', () => {
         clearInterval(timer);

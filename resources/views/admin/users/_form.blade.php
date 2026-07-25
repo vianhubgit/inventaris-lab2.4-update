@@ -1,3 +1,4 @@
+    <input type="hidden" name="_prev" value="{{ url()->previous() }}">
 @php($user = $user ?? null)
 
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -41,5 +42,5 @@
 
 <div class="mt-6 flex items-center gap-3">
     <button class="btn-primary">{{ $user ? 'Simpan Perubahan' : 'Tambah Pengguna' }}</button>
-    <a href="{{ route('admin.users.index') }}" class="btn-secondary">Batal</a>
+    <a href="{{ url()->previous(route('admin.users.index')) }}" class="btn-secondary">Batal</a>
 </div>

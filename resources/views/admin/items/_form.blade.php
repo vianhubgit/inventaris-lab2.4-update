@@ -1,3 +1,4 @@
+    <input type="hidden" name="_prev" value="{{ url()->previous() }}">
 @php
     $item = $item ?? null;
     // Bangun struktur data untuk dropdown bertingkat lab → meja.
@@ -79,5 +80,5 @@
 
 <div class="mt-6 flex gap-3">
     <button class="btn-primary">{{ $item ? 'Simpan Perubahan' : 'Tambah Barang' }}</button>
-    <a href="{{ route('admin.items.index') }}" class="btn-secondary">Batal</a>
+    <a href="{{ url()->previous(route('admin.items.index')) }}" class="btn-secondary">Batal</a>
 </div>

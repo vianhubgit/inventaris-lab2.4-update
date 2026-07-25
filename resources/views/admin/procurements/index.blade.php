@@ -32,20 +32,14 @@
     <div class="card overflow-hidden">
         <div class="overflow-x-auto">
             <table class="table-default">
-                <thead><tr><th>Tanggal</th><th>Barang</th><th>Jenis</th><th>Jumlah</th><th>Pengaju</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
+                <thead><tr><th>Tanggal</th><th>Barang</th><th>Kelas</th><th>Jumlah</th><th>Pengaju</th><th>Status</th><th class="text-right">Aksi</th></tr></thead>
                 <tbody>
                     @forelse($procurements as $p)
                         <tr>
                             <td class="text-sm">{{ $p->requested_at?->format('d-m-Y') }}</td>
                             <td class="font-medium">{{ $p->nama_barang }}</td>
-                            <td>
-                                @if($p->is_new_item)
-                                    <x-badge class="bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300">Barang Baru</x-badge>
-                                @else
-                                    <x-badge class="bg-gray-200 text-gray-600 dark:bg-gray-700">Barang Ada</x-badge>
-                                @endif
-                            </td>
-                            <td>{{ $p->jumlah }}</td>
+                            <td class="text-sm">{{ $p->kelas ?? '—' }}</td>
+                            <td>{{ $p->jumlah }}@if(!is_null($p->jumlah_disetujui)) <span class="text-xs text-emerald-600 dark:text-emerald-400">(disetujui {{ $p->jumlah_disetujui }})</span>@endif</td>
                             <td class="text-sm">{{ $p->user?->name }}</td>
                             <td><x-badge :class="$p->status->badge()">{{ $p->status->label() }}</x-badge></td>
                             <td class="text-right">
@@ -60,5 +54,5 @@
         </div>
     </div>
 
-    <div class="mt-4">{{ $procurements->links() }}</div>
+    <div class="mt-4"><x-paginator :paginator="$procurements" /></div>
 @endsection

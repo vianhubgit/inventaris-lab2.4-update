@@ -4,8 +4,8 @@ namespace App\Http\Controllers\Sekretaris;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Sekretaris\StoreProcurementRequest;
-use App\Models\Category;
 use App\Models\Item;
+use App\Models\Kelas;
 use App\Models\Lab;
 use App\Models\Procurement;
 use App\Notifications\NewProcurementNotification;
@@ -39,13 +39,7 @@ class ProcurementController extends Controller
     {
         $data = $request->validated();
         $data['user_id'] = $request->user()->id;
-
-        // Bersihkan field yang tidak relevan tergantung jenis pengajuan.
-        if ($data['is_new_item']) {
-            $data['item_id'] = null;
-        } else {
-            $data['nama_barang_baru'] = null;
-        }
+        $data['is_new_item'] = false;
 
         $procurement = Procurement::create($data);
 
@@ -80,16 +74,11 @@ class ProcurementController extends Controller
         $this->authorize('update', $procurement);
 
         $data = $request->validated();
-
-        if ($data['is_new_item']) {
-            $data['item_id'] = null;
-        } else {
-            $data['nama_barang_baru'] = null;
-        }
+        $data['is_new_item'] = false;
 
         $procurement->update($data);
 
-        return redirect()->route('sekretaris.procurements.index')
+        return $this->backToList('sekretaris.procurements.index')
             ->with('success', 'Pengajuan berhasil diperbarui.');
     }
 
@@ -99,16 +88,17 @@ class ProcurementController extends Controller
 
         $procurement->delete();
 
-        return redirect()->route('sekretaris.procurements.index')
+        return back()
             ->with('success', 'Pengajuan berhasil dihapus.');
     }
 
     private function formData(): array
     {
         return [
-            'categories' => Category::orderBy('nama')->get(),
-            'labs' => Lab::with('groups.tables')->orderBy('nama')->get(),
-            'items' => Item::orderBy('nama')->get(['id', 'nama', 'category_id', 'lab_id', 'lab_table_id']),
+            'labs' => Lab::orderBy('nama')->get(),
+            // jumlah_total dipakai untuk membatasi jumlah pinjaman sesuai stok.
+            'items' => Item::orderBy('nama')->get(['id', 'nama', 'lab_id', 'jumlah_total']),
+            'kelasList' => Kelas::orderBy('nama')->pluck('nama')->all(),
         ];
     }
 }

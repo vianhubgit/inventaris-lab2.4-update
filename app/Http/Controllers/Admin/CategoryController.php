@@ -54,7 +54,7 @@ class CategoryController extends Controller
         $category->update($request->validated());
         ActivityLogger::updated($category, "Mengubah kategori \"{$category->nama}\".");
 
-        return redirect()->route('admin.categories.index')
+        return $this->backToList('admin.categories.index')
             ->with('success', 'Kategori berhasil diperbarui.');
     }
 
@@ -69,7 +69,7 @@ class CategoryController extends Controller
         $category->forcedelete();
         ActivityLogger::deleted($category, "Menghapus kategori \"{$category->nama}\".");
 
-        return redirect()->route('admin.categories.index')
+        return back()
             ->with('success', 'Kategori berhasil dihapus.');
     }
 }

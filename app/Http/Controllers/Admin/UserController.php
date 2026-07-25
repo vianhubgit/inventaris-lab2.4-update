@@ -68,7 +68,7 @@ class UserController extends Controller
 
         $user->update($data);
 
-        return redirect()->route('admin.users.index')
+        return $this->backToList('admin.users.index')
             ->with('success', 'Data pengguna berhasil diperbarui.');
     }
 
@@ -88,7 +88,7 @@ class UserController extends Controller
 
         $user->delete();
 
-        return redirect()->route('admin.users.index')
+        return back()
             ->with('success', 'Pengguna berhasil dihapus.');
     }
 }

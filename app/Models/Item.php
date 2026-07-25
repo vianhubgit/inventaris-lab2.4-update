@@ -85,6 +85,32 @@ class Item extends Model
         });
     }
 
+    /**
+     * Daftar barang yang digabung berdasarkan nama.
+     *
+     * Barang dengan nama sama (mis. banyak "Keyboard" di lokasi berbeda)
+     * digabung menjadi satu opsi. Dipakai pada dropdown pemilihan barang di
+     * menu Riwayat Perbaikan & Audit agar tidak muncul duplikat per lokasi.
+     * - id           : id barang perwakilan (dipakai sebagai value option)
+     * - nama         : nama barang
+     * - jumlah_total : jumlah seluruh barang dengan nama sama (dijumlahkan)
+     * - ids          : seluruh id barang bernama sama (untuk pre-select edit)
+     *
+     * @return \Illuminate\Support\Collection<int, object>
+     */
+    public static function groupedByName(): \Illuminate\Support\Collection
+    {
+        return static::orderBy('nama')->get()
+            ->groupBy('nama')
+            ->map(fn ($group) => (object) [
+                'id' => $group->first()->id,
+                'nama' => $group->first()->nama,
+                'jumlah_total' => $group->sum('jumlah_total'),
+                'ids' => $group->pluck('id')->all(),
+            ])
+            ->values();
+    }
+
     /** Lokasi ringkas untuk ditampilkan. */
     public function getLokasiLengkapAttribute(): string
     {

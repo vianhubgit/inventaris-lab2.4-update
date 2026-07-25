@@ -4,6 +4,8 @@
 @section('page-title', 'Riwayat Perbaikan Barang')
 
 @section('actions')
+    <a href="{{ route('admin.export.repairs.excel', request()->query()) }}" class="btn-success px-3 py-2 text-sm">Excel</a>
+    <a href="{{ route('admin.export.repairs.pdf', request()->query()) }}" class="btn-danger px-3 py-2 text-sm">PDF</a>
     <a href="{{ route('admin.repairs.create') }}" class="btn-primary">
         <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
         Catat Perbaikan
@@ -54,5 +56,5 @@
         </div>
     </div>
 
-    <div class="mt-4">{{ $repairs->links() }}</div>
+    <div class="mt-4"><x-paginator :paginator="$repairs" /></div>
 @endsection

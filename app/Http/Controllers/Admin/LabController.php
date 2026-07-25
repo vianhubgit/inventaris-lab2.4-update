@@ -55,7 +55,7 @@ class LabController extends Controller
         $lab->update($data);
         ActivityLogger::updated($lab, "Mengubah laboratorium \"{$lab->nama}\".");
 
-        return redirect()->route('admin.labs.index')
+        return $this->backToList('admin.labs.index')
             ->with('success', 'Laboratorium berhasil diperbarui.');
     }
 

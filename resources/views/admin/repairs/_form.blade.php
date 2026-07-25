@@ -1,3 +1,4 @@
+    <input type="hidden" name="_prev" value="{{ url()->previous() }}">
 @php($repair = $repair ?? null)
 
 <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
@@ -6,7 +7,7 @@
         <select name="item_id" class="form-select" required>
             <option value="">— Pilih Barang —</option>
             @foreach($items as $i)
-                <option value="{{ $i->id }}" @selected(old('item_id', $repair?->item_id ?? ($report?->item_id ?? null)) == $i->id)>{{ $i->nama }}</option>
+                <option value="{{ $i->id }}" @selected(in_array(old('item_id', $repair?->item_id ?? ($report?->item_id ?? null)), $i->ids))>{{ $i->nama }}</option>
             @endforeach
         </select>
         @error('item_id')<p class="form-error">{{ $message }}</p>@enderror
@@ -44,5 +45,5 @@
 
 <div class="mt-6 flex gap-3">
     <button class="btn-primary">{{ $repair ? 'Simpan Perubahan' : 'Simpan' }}</button>
-    <a href="{{ route('admin.repairs.index') }}" class="btn-secondary">Batal</a>
+    <a href="{{ url()->previous(route('admin.repairs.index')) }}" class="btn-secondary">Batal</a>
 </div>

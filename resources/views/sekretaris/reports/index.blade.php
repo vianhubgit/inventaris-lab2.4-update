@@ -6,6 +6,7 @@
 @section('actions')
     <a href="{{ route('sekretaris.reports.create', ['type' => 'rusak']) }}" class="btn-warning">+ Rusak</a>
     <a href="{{ route('sekretaris.reports.create', ['type' => 'hilang']) }}" class="btn-secondary">+ Hilang</a>
+    <a href="{{ route('sekretaris.reports.create', ['type' => 'umum']) }}" class="btn-secondary">+ Barang TEFA</a>
 @endsection
 
 @section('content')
@@ -55,5 +56,5 @@
         </div>
     </div>
 
-    <div class="mt-4">{{ $reports->links() }}</div>
+    <div class="mt-4"><x-paginator :paginator="$reports" /></div>
 @endsection

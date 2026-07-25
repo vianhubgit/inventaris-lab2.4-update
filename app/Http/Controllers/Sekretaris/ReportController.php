@@ -98,7 +98,7 @@ class ReportController extends Controller
 
         $report->update($data);
 
-        return redirect()->route('sekretaris.reports.index', ['type' => $report->type])
+        return $this->backToList('sekretaris.reports.index', ['type' => $report->type])
             ->with('success', 'Laporan berhasil diperbarui.');
     }
 
@@ -111,7 +111,7 @@ class ReportController extends Controller
         }
         $report->forcedelete();
 
-        return redirect()->route('sekretaris.reports.index')
+        return back()
             ->with('success', 'Laporan berhasil dihapus.');
     }
 

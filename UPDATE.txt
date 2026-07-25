@@ -1,0 +1,378 @@
+==========================================================================
+ PANDUAN UPDATE (METODE SYMLINK / RELEASES) — INVENTARIS LAB TKJ
+ Target : Ubuntu Server 24.04 + Nginx + PHP-FPM 8.4 + MariaDB
+ Deploy pertama memakai DEPLOY_SERVER.txt (mode "flat").
+ Dokumen ini untuk UPDATE berikutnya memakai metode symlink (zero-downtime).
+==========================================================================
+
+Alur yang dipakai (sesuai permintaan):
+  1) Backup database lama  -> disimpan di /backup-db
+  2) Ambil aplikasi baru via GIT  -> ke folder rilis baru (releases/<tanggal>)
+  3) Deploy aplikasi (composer, build aset, cache)
+  4) Alihkan symlink "current" (yang ditunjuk Nginx) ke rilis terbaru
+  5) Restore database baru ke MariaDB  (atau cukup migrasi — lihat LANGKAH 6)
+
+Keunggulan metode symlink:
+  - Nyaris tanpa downtime: build rilis baru dulu, baru "tukar" symlink 1 detik.
+  - Rollback instan: cukup arahkan symlink kembali ke rilis lama.
+  - .env & foto upload AMAN karena disimpan terpisah di folder "shared".
+
+
+--------------------------------------------------------------------------
+ STRUKTUR DIREKTORI (setelah metode symlink)
+--------------------------------------------------------------------------
+ /var/www/inventaris-lab/                 <- BASE (folder induk)
+ |
+ +-- releases/                            <- tiap rilis = 1 hasil "git clone"
+ |   +-- 20260725-120000/                 <- rilis (kode aplikasi)
+ |   +-- 20260726-093000/                 <- rilis berikutnya ...
+ |
+ +-- shared/                              <- data PERSISTEN (tetap antar-rilis)
+ |   +-- .env                             <- konfigurasi produksi (APP_KEY dll)
+ |   +-- storage/                         <- foto laporan, log, cache framework
+ |
+ +-- current  ->  releases/20260726-093000    <- SYMLINK aktif (ditunjuk Nginx)
+
+ Nginx "root" diarahkan ke:  /var/www/inventaris-lab/current/public
+ Jadi setiap rilis baru cukup dengan menukar symlink "current".
+
+ Variabel yang dipakai di dokumen ini:
+   BASE=/var/www/inventaris-lab
+   REPO=git@github.com:vianhubgit/inventaris-lab2.4-update.git            (mis. git@github.com:user/inventaris-lab.git)
+   BRANCH=main
+   DBNAME=inventaris_lab
+   DBUSER=inventaris
+   DBPASS=<sesuai DB_PASSWORD di shared/.env>
+
+
+==========================================================================
+ BAGIAN 0 — KONVERSI SEKALI JALAN (dari layout "flat" lama ke symlink)
+==========================================================================
+Lakukan HANYA SEKALI, saat pertama beralih ke metode symlink. Bila server
+sudah memakai struktur symlink, LANGSUNG ke BAGIAN 1.
+
+Asumsi: aplikasi lama saat ini ada langsung di /var/www/inventaris-lab
+(hasil DEPLOY_SERVER.txt).
+
+ 0.1  Masuk maintenance & backup dulu (aman):
+   $ cd /var/www/inventaris-lab
+   $ sudo -u www-data php artisan down
+   $ sudo mkdir -p /backup-db
+   $ sudo mysqldump -u inventaris -p --single-transaction --routines --triggers \
+        inventaris_lab > /backup-db/inventaris_lab-$(date +%Y%m%d-%H%M%S).sql
+
+ 0.2  Pindahkan instalasi lama menjadi cadangan (JANGAN dihapus dulu):
+   $ sudo mv /var/www/inventaris-lab /var/www/inventaris-lab-legacy
+
+ 0.3  Buat struktur symlink baru:
+   $ sudo mkdir -p /var/www/inventaris-lab/releases
+   $ sudo mkdir -p /var/www/inventaris-lab/shared
+
+ 0.4  Pindahkan .env & storage lama ke folder "shared" (agar persisten):
+   $ sudo cp /var/www/inventaris-lab-legacy/.env  /var/www/inventaris-lab/shared/.env
+   $ sudo cp -a /var/www/inventaris-lab-legacy/storage  /var/www/inventaris-lab/shared/storage
+   (storage berisi foto laporan di storage/app/public — WAJIB ikut dipindah.)
+
+ 0.5  Set kepemilikan:
+   $ sudo chown -R www-data:www-data /var/www/inventaris-lab
+
+ 0.6  Lanjut BAGIAN 1 untuk membuat rilis pertama, LALU BAGIAN 5 untuk
+      mengarahkan root Nginx ke .../current/public.
+
+ 0.7  Bila semua sudah OK dan situs jalan dari "current", cadangan lama
+      boleh dihapus:  $ sudo rm -rf /var/www/inventaris-lab-legacy
+
+
+==========================================================================
+ BAGIAN 1 — ALUR UPDATE MANUAL (LANGKAH DEMI LANGKAH)
+==========================================================================
+Jalankan tiap kali ada versi baru. (Versi otomatis ada di BAGIAN 2.)
+Set variabel dulu supaya perintah pendek:
+
+   $ BASE=/var/www/inventaris-lab
+   $ REPO=git@github.com:vianhubgit/inventaris-lab2.4-update.git
+   $ BRANCH=main
+   $ TS=$(date +%Y%m%d-%H%M%S)
+   $ REL=$BASE/releases/$TS
+   $ echo "Rilis baru: $REL"
+
+
+-- LANGKAH 1 — (Opsional) Mode maintenance pada rilis yang sedang aktif -----
+   $ sudo -u www-data $BASE/current/artisan down --render="errors::503" || true
+   (Boleh dilewati karena metode symlink hampir tanpa downtime.)
+
+
+-- LANGKAH 2 — BACKUP DATABASE LAMA -> /backup-db ---------------------------
+   $ sudo mkdir -p /backup-db
+   $ sudo mysqldump -u $DBUSER -p --single-transaction --routines --triggers \
+        --events $DBNAME > /backup-db/inventaris_lab-$TS.sql
+   $ ls -lh /backup-db/inventaris_lab-$TS.sql        # pastikan ukurannya wajar
+   $ tail -n1 /backup-db/inventaris_lab-$TS.sql       # harus "-- Dump completed"
+
+   (Backup ini penyelamat bila update/restore gagal — jangan dilewati.)
+
+
+-- LANGKAH 3 — AMBIL RILIS BARU VIA GIT ------------------------------------
+   $ sudo git clone --depth 1 -b $BRANCH $REPO $REL
+   (Bila repo privat pakai SSH key/token. Alternatif tanpa git: scp folder
+    build ke $REL.)
+
+
+-- LANGKAH 4 — SAMBUNGKAN SHARED (.env & storage) --------------------------
+Tautkan .env dan storage rilis baru ke folder "shared" agar konfigurasi &
+foto upload tetap sama antar-rilis:
+
+   $ sudo ln -sfn $BASE/shared/.env $REL/.env
+   $ sudo rm -rf $REL/storage
+   $ sudo ln -sfn $BASE/shared/storage $REL/storage
+
+
+-- LANGKAH 5 — DEPLOY (dependency, aset, storage:link) ---------------------
+   $ cd $REL
+   $ sudo -u www-data composer install --no-dev --optimize-autoloader
+   $ sudo -u www-data npm ci
+   $ sudo -u www-data npm run build
+   $ sudo -u www-data php artisan storage:link
+        (membuat public/storage -> ../storage/app/public di shared)
+
+   Catatan RAM kecil (<=1GB): bila "npm run build" gagal ("Killed"/OOM),
+   aktifkan swap 2GB dulu (lihat DEPLOY_SERVER.txt langkah 12).
+
+
+-- LANGKAH 6 — DATABASE: pilih salah satu strategi --------------------------
+ >>> STRATEGI A — RESTORE DATABASE BARU (mengganti seluruh data)
+     Gunakan bila Anda membawa dump DB versi baru dari lokal/staging.
+     PERINGATAN: ini MENGHAPUS data lama. Backup di LANGKAH 2 wajib ada.
+
+     1) Siapkan file dump baru di server, mis: /backup-db/baru.sql
+     2) Kosongkan lalu buat ulang database (restore bersih):
+        $ sudo mysql -u root -p -e \
+          "DROP DATABASE IF EXISTS $DBNAME; \
+           CREATE DATABASE $DBNAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
+           GRANT ALL PRIVILEGES ON $DBNAME.* TO '$DBUSER'@'localhost'; FLUSH PRIVILEGES;"
+     3) Impor dump baru:
+        $ sudo mysql -u $DBUSER -p $DBNAME < /backup-db/baru.sql
+     4) Samakan skema bila dump lebih lama dari kode (aman, idempotent):
+        $ cd $REL && sudo -u www-data php artisan migrate --force
+
+ >>> STRATEGI B — MIGRASI SAJA (mempertahankan data produksi) [DISARANKAN
+     untuk update rutin yang hanya mengubah kode/skema]
+        $ cd $REL && sudo -u www-data php artisan migrate --force
+
+
+-- LANGKAH 7 — CACHE PRODUKSI ----------------------------------------------
+   $ cd $REL
+   $ sudo -u www-data php artisan config:cache
+   $ sudo -u www-data php artisan route:cache
+   $ sudo -u www-data php artisan view:cache
+
+
+-- LANGKAH 8 — PERMISSION --------------------------------------------------
+   $ sudo chown -R www-data:www-data $REL
+   $ sudo chown -R www-data:www-data $BASE/shared/storage
+   $ sudo chmod -R 775 $BASE/shared/storage $REL/bootstrap/cache
+
+
+-- LANGKAH 9 — ALIHKAN SYMLINK "current" KE RILIS BARU (GO-LIVE) -----------
+Ini bagian inti metode symlink — pergantian versi terjadi seketika:
+
+   $ sudo ln -sfn $REL $BASE/current
+   $ sudo systemctl reload php8.4-fpm     # WAJIB: bersihkan cache path/opcache
+   $ sudo systemctl reload nginx
+
+   (Karena Nginx memakai $realpath_root, reload PHP-FPM memastikan rilis baru
+    langsung terbaca, bukan path lama yang tercache.)
+
+   Keluar maintenance bila tadi diaktifkan:
+   $ sudo -u www-data $BASE/current/artisan up
+
+
+-- LANGKAH 10 — VERIFIKASI -------------------------------------------------
+   $ curl -I http://localhost/                 # 200/302, bukan 500
+   $ curl -s http://localhost/up               # health check Laravel
+   $ readlink $BASE/current                     # pastikan menunjuk rilis baru
+   $ sudo tail -n 30 $BASE/shared/storage/logs/laravel.log
+   - Buka dari browser, login admin & sekretaris, cek fitur inti + upload foto.
+
+
+==========================================================================
+ BAGIAN 2 — SKRIP OTOMATIS ( update.sh )
+==========================================================================
+Simpan skrip ini di BASE (bukan di dalam rilis, agar tetap ada):
+   $ sudo nano /var/www/inventaris-lab/update.sh
+   $ sudo chmod +x /var/www/inventaris-lab/update.sh
+
+Jalankan:
+   $ sudo /var/www/inventaris-lab/update.sh
+   (Skrip default memakai STRATEGI B = migrasi. Untuk RESTORE dump baru,
+    jalankan:  sudo RESTORE_DUMP=/backup-db/baru.sql /var/www/inventaris-lab/update.sh )
+
+------------------------------ update.sh ---------------------------------
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ---------- Konfigurasi ----------
+BASE=/var/www/inventaris-lab
+REPO="git@github.com:vianhubgit/inventaris-lab2.4-update.git"
+BRANCH="main"
+DBNAME="inventaris_lab"
+DBUSER="inventaris"
+KEEP=5                              # jumlah rilis lama yang disimpan
+RESTORE_DUMP="${RESTORE_DUMP:-}"    # isi path .sql utk mode restore DB
+# ---------------------------------
+
+TS=$(date +%Y%m%d-%H%M%S)
+REL="$BASE/releases/$TS"
+PREV=$(readlink -f "$BASE/current" || true)
+echo ">> Rilis baru: $REL"
+
+# 1) Backup database
+mkdir -p /backup-db
+echo ">> Backup DB ke /backup-db/inventaris_lab-$TS.sql"
+mysqldump -u "$DBUSER" -p"$(grep -m1 '^DB_PASSWORD=' "$BASE/shared/.env" | cut -d= -f2- | tr -d '"')" \
+    --single-transaction --routines --triggers --events "$DBNAME" \
+    > "/backup-db/inventaris_lab-$TS.sql"
+
+# 2) Clone rilis baru
+echo ">> git clone $BRANCH"
+git clone --depth 1 -b "$BRANCH" "$REPO" "$REL"
+
+# 3) Sambungkan shared (.env & storage)
+ln -sfn "$BASE/shared/.env" "$REL/.env"
+rm -rf "$REL/storage"
+ln -sfn "$BASE/shared/storage" "$REL/storage"
+
+# 4) Dependency + build aset
+cd "$REL"
+composer install --no-dev --optimize-autoloader
+npm ci
+npm run build
+php artisan storage:link || true
+
+# 5) Database: restore dump baru ATAU migrasi
+if [ -n "$RESTORE_DUMP" ]; then
+    echo ">> RESTORE database dari $RESTORE_DUMP"
+    DBPASS="$(grep -m1 '^DB_PASSWORD=' "$BASE/shared/.env" | cut -d= -f2- | tr -d '"')"
+    mysql -u "$DBUSER" -p"$DBPASS" -e \
+      "DROP DATABASE IF EXISTS $DBNAME; CREATE DATABASE $DBNAME CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
+    mysql -u "$DBUSER" -p"$DBPASS" "$DBNAME" < "$RESTORE_DUMP"
+    php artisan migrate --force
+else
+    php artisan migrate --force
+fi
+
+# 6) Cache produksi
+php artisan config:cache
+php artisan route:cache
+php artisan view:cache
+
+# 7) Permission
+chown -R www-data:www-data "$REL" "$BASE/shared/storage"
+chmod -R 775 "$REL/bootstrap/cache" "$BASE/shared/storage"
+
+# 8) Go-live: tukar symlink + reload
+ln -sfn "$REL" "$BASE/current"
+systemctl reload php8.4-fpm
+systemctl reload nginx
+echo ">> current -> $(readlink "$BASE/current")"
+
+# 9) Bersih-bersih rilis lama (sisakan $KEEP terbaru)
+cd "$BASE/releases"
+ls -1dt */ | tail -n +$((KEEP+1)) | xargs -r rm -rf
+echo ">> Selesai. Rilis sebelumnya: $PREV (untuk rollback bila perlu)"
+--------------------------------------------------------------------------
+
+
+==========================================================================
+ BAGIAN 3 — ROLLBACK (kembali ke rilis sebelumnya)
+==========================================================================
+Bila rilis baru bermasalah, arahkan "current" ke rilis lama:
+
+   $ BASE=/var/www/inventaris-lab
+   $ ls -1dt $BASE/releases/*/          # lihat daftar rilis (terbaru di atas)
+   $ sudo ln -sfn $BASE/releases/<RILIS_LAMA> $BASE/current
+   $ sudo systemctl reload php8.4-fpm nginx
+
+Rollback DATABASE (bila tadi memakai STRATEGI A / restore):
+   $ sudo mysql -u root -p -e \
+       "DROP DATABASE IF EXISTS inventaris_lab; \
+        CREATE DATABASE inventaris_lab CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci; \
+        GRANT ALL PRIVILEGES ON inventaris_lab.* TO 'inventaris'@'localhost'; FLUSH PRIVILEGES;"
+   $ sudo mysql -u inventaris -p inventaris_lab < /backup-db/inventaris_lab-<TS_SEBELUM_UPDATE>.sql
+
+(Jika STRATEGI B / hanya migrasi dan tidak ada migration "down" yang aman,
+ rollback DB paling aman tetap lewat restore backup di /backup-db.)
+
+
+==========================================================================
+ BAGIAN 4 — BERSIH-BERSIH RILIS LAMA
+==========================================================================
+Simpan beberapa rilis terakhir untuk rollback, hapus sisanya:
+
+   $ cd /var/www/inventaris-lab/releases
+   $ ls -1dt */ | tail -n +6 | sudo xargs -r rm -rf      # sisakan 5 terbaru
+
+Backup DB lama di /backup-db juga sebaiknya dirotasi (mis. simpan 14 hari):
+   $ sudo find /backup-db -name '*.sql' -mtime +14 -delete
+
+
+==========================================================================
+ BAGIAN 5 — NGINX (arahkan root ke "current")  [sekali saja]
+==========================================================================
+Ubah root pada server block agar menunjuk symlink "current":
+
+   $ sudo nano /etc/nginx/sites-available/inventaris-lab
+
+   Ganti baris:
+       root /var/www/inventaris-lab/public;
+   Menjadi:
+       root /var/www/inventaris-lab/current/public;
+
+   Pastikan blok PHP memakai $realpath_root (sudah ada di config awal):
+       fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+
+Uji & reload:
+   $ sudo nginx -t
+   $ sudo systemctl reload nginx
+
+Setelah ini, pergantian versi CUKUP dengan menukar symlink "current"
+(LANGKAH 9) — file Nginx TIDAK perlu diedit lagi tiap update.
+
+
+==========================================================================
+ BAGIAN 6 — CATATAN & TROUBLESHOOTING
+==========================================================================
+- WAJIB reload php8.4-fpm setelah tukar symlink, jika tidak PHP-FPM bisa
+  memakai path rilis lama dari realpath cache (halaman tak berubah / error).
+- Foto upload TIDAK hilang saat update karena disimpan di shared/storage.
+  Pastikan LANGKAH 4 (symlink storage) selalu dilakukan tiap rilis.
+- .env hanya satu (shared/.env). Jangan menaruh .env di dalam rilis.
+- Jangan pernah 'git clone' menimpa folder current secara langsung; selalu
+  clone ke folder rilis BARU lalu tukar symlink (itulah inti zero-downtime).
+- Jika muncul "Permission denied" pada storage/log: ulangi LANGKAH 8.
+- Jika halaman 500 setelah go-live:
+    $ sudo tail -n 50 /var/www/inventaris-lab/shared/storage/logs/laravel.log
+    $ sudo tail -n 50 /var/log/nginx/error.log
+  Lalu rollback (BAGIAN 3) bila perlu, situs langsung normal kembali.
+- Perbedaan dengan DEPLOY_SERVER.txt: di sini TIDAK memakai ./deploy.sh
+  bawaan (itu untuk mode flat). Gunakan update.sh (BAGIAN 2) untuk metode
+  symlink.
+
+
+==========================================================================
+ CHECKLIST UPDATE
+==========================================================================
+[ ] Backup DB lama tersimpan di /backup-db (ukuran wajar, "Dump completed")
+[ ] Rilis baru di releases/<tanggal> hasil git, bukan menimpa current
+[ ] .env & storage rilis baru menaut ke shared/ (bukan file sendiri)
+[ ] composer install --no-dev + npm run build sukses (public/build terisi)
+[ ] Database: STRATEGI A (restore dump) ATAU STRATEGI B (migrate) beres
+[ ] config/route/view cache dibuat ulang
+[ ] Kepemilikan www-data & permission storage 775
+[ ] symlink current menunjuk rilis baru + php8.4-fpm & nginx di-reload
+[ ] http://<IP>/up = 200, login admin & sekretaris OK, upload foto tampil
+[ ] Rilis lama disisakan beberapa untuk rollback
+
+==========================================================================
+ SELESAI. Metode symlink siap dipakai untuk update tanpa downtime.
+==========================================================================

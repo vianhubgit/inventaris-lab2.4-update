@@ -5,7 +5,7 @@
 @section('breadcrumb', 'Kelola ' . ($lab->kode == 'TEFA' ? 'lemari dan rak' : 'kelompok dan meja') . ' di laboratorium ini')
 
 @section('actions')
-    <a href="{{ route('admin.labs.index') }}" class="btn-secondary">Kembali</a>
+    <a href="{{ url()->previous(route('admin.labs.index')) }}" class="btn-secondary">Kembali</a>
 @endsection
 
 @section('content')

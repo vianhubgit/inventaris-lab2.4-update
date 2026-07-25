@@ -44,5 +44,5 @@
         </div>
     </div>
 
-    <div class="mt-4">{{ $logs->links() }}</div>
+    <div class="mt-4"><x-paginator :paginator="$logs" /></div>
 @endsection

@@ -15,6 +15,10 @@ use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\Response;
 use App\Exports\ProcurementsExport;
 use App\Models\Procurement;
+use App\Exports\RepairsExport;
+use App\Exports\StockAuditsExport;
+use App\Models\Repair;
+use App\Models\StockAudit;
 
 class ExportController extends Controller
 {
@@ -276,5 +280,65 @@ public function procurementsPdf(Request $request): Response
         ])->setPaper('a4', 'landscape');
 
         return $pdf->download('laporan-'.now()->format('Ymd-His').'.pdf');
+    }
+
+    /* ===================== RIWAYAT PERBAIKAN / REPAIRS ===================== */
+
+    public function repairsExcel(Request $request): BinaryFileResponse
+    {
+        ActivityLogger::log('export', 'Export riwayat perbaikan ke Excel.');
+
+        return Excel::download(
+            new RepairsExport($request->only(['status'])),
+            'riwayat-perbaikan-'.now()->format('Ymd-His').'.xlsx'
+        );
+    }
+
+    public function repairsPdf(Request $request): Response
+    {
+        $repairs = Repair::query()
+            ->with(['item', 'user'])
+            ->when($request->filled('status'), fn ($q) => $q->where('status', $request->status))
+            ->latest('tanggal')
+            ->get();
+
+        ActivityLogger::log('export', 'Export riwayat perbaikan ke PDF.');
+
+        $pdf = Pdf::loadView('pdf.repairs', [
+            'repairs' => $repairs,
+            'tanggal' => now()->translatedFormat('d F Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('riwayat-perbaikan-'.now()->format('Ymd-His').'.pdf');
+    }
+
+    /* ===================== AUDIT INVENTARIS / STOCK AUDITS ===================== */
+
+    public function auditsExcel(Request $request): BinaryFileResponse
+    {
+        ActivityLogger::log('export', 'Export audit inventaris ke Excel.');
+
+        return Excel::download(
+            new StockAuditsExport($request->only(['item_id'])),
+            'audit-inventaris-'.now()->format('Ymd-His').'.xlsx'
+        );
+    }
+
+    public function auditsPdf(Request $request): Response
+    {
+        $audits = StockAudit::query()
+            ->with(['item', 'user'])
+            ->when($request->filled('item_id'), fn ($q) => $q->where('item_id', $request->item_id))
+            ->latest('tanggal')
+            ->get();
+
+        ActivityLogger::log('export', 'Export audit inventaris ke PDF.');
+
+        $pdf = Pdf::loadView('pdf.audits', [
+            'audits' => $audits,
+            'tanggal' => now()->translatedFormat('d F Y H:i'),
+        ])->setPaper('a4', 'landscape');
+
+        return $pdf->download('audit-inventaris-'.now()->format('Ymd-His').'.pdf');
     }
 }

@@ -6,7 +6,7 @@
 
 @section('actions')
     <a href="{{ route('admin.items.edit', $item) }}" class="btn-secondary">Edit</a>
-    <a href="{{ route('admin.items.index') }}" class="btn-secondary">Kembali</a>
+    <a href="{{ url()->previous(route('admin.items.index')) }}" class="btn-secondary">Kembali</a>
 @endsection
 
 @section('content')

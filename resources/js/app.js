@@ -4,6 +4,7 @@ import { initLoader } from './loader';
 import { initCharts } from './charts';
 import { initCascade } from './cascade';
 import { initRealtimeNotifications } from './realtime';
+import { initPwa } from './pwa';
 
 /**
  * Entry point aplikasi Inventaris Lab TKJ.
@@ -19,6 +20,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initProcurementToggle();
     initNotifications();
     initRealtimeNotifications();
+    initPwa();
 });
 
 /** Dropdown notifikasi (lonceng) di topbar. */

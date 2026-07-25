@@ -4,7 +4,7 @@
 @section('page-title', 'Detail Laporan #' . $report->id)
 
 @section('actions')
-    <a href="{{ route('sekretaris.reports.index') }}" class="btn-secondary">Kembali</a>
+    <a href="{{ url()->previous(route('sekretaris.reports.index')) }}" class="btn-secondary">Kembali</a>
 @endsection
 
 @section('content')

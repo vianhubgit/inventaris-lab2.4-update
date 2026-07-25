@@ -1,7 +1,7 @@
 @extends('layouts.app')
 
 @section('title', 'Pinjam Barang')
-@section('page-title', 'Pengajuan Barang')
+@section('page-title', 'Peminjaman Barang')
 
 @section('content')
     <div class="card max-w-2xl p-6">

@@ -13,13 +13,25 @@ class Procurement extends Model
     /** @use HasFactory<\Database\Factories\ProcurementFactory> */
     use HasFactory, SoftDeletes;
 
+    /** Pilihan kelas peminjam untuk dropdown & validasi. */
+    public const KELAS_OPTIONS = [
+        'X TKJ A',
+        'X TKJ B',
+        'XI TKJ A',
+        'XI TKJ B',
+        'XII TKJ A',
+        'XII TKJ B',
+    ];
+
     protected $fillable = [
         'user_id',
+        'kelas',
         'category_id',
         'item_id',
         'is_new_item',
         'nama_barang_baru',
         'jumlah',
+        'jumlah_disetujui',
         'alasan',
         'status',
         'catatan_admin',
@@ -32,6 +44,7 @@ class Procurement extends Model
             'status' => ProcurementStatus::class,
             'is_new_item' => 'boolean',
             'jumlah' => 'integer',
+            'jumlah_disetujui' => 'integer',
             'requested_at' => 'datetime',
         ];
     }

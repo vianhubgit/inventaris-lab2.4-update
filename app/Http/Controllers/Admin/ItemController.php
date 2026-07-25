@@ -77,7 +77,7 @@ class ItemController extends Controller
     {
         $item->update($request->validated());
 
-        return redirect()->route('admin.items.index')
+        return $this->backToList('admin.items.index')
             ->with('success', 'Barang berhasil diperbarui.');
     }
 
@@ -87,7 +87,7 @@ class ItemController extends Controller
 
         $item->forcedelete();
 
-        return redirect()->route('admin.items.index')
+        return back()
             ->with('success', 'Barang berhasil dihapus.');
     }
 

@@ -19,6 +19,10 @@
     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5a2 2 0 011.414.586l7 7a2 2 0 010 2.828l-5 5a2 2 0 01-2.828 0l-7-7A2 2 0 013 7V5a2 2 0 012-2z"/></svg>
     Kategori
 </a>
+<a href="{{ route('admin.kelas.index') }}" class="{{ $nav('admin.kelas.*') }}">
+    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l9-5-9-5-9 5 9 5z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 14l6.16-3.422A12.083 12.083 0 0121 12.72V16a2 2 0 01-2 2H5a2 2 0 01-2-2v-3.28a12.083 12.083 0 012.84-2.142L12 14z"/></svg>
+    Kelas
+</a>
 <a href="{{ route('admin.labs.index') }}" class="{{ $nav('admin.labs.*') }}">
     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5"/></svg>
     Tata Letak Lab

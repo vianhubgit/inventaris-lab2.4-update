@@ -1,3 +1,4 @@
+    <input type="hidden" name="_prev" value="{{ url()->previous() }}">
 @php
     $report = $report ?? null;
     $cascade = ['labs' => [], 'items' => []];
@@ -11,7 +12,13 @@
         }
         $cascade['labs'][$lab->id] = ['groups' => $groups];
     }
-    foreach ($items as $it) {
+    // Laporan umum: barang dengan nama sama cukup tampil satu (dedup per lab).
+    // Menu rusak & hilang tetap menampilkan seluruh barang seperti biasa.
+    $isUmum = ($type->value ?? $report?->type?->value) === 'umum';
+    $itemSource = $isUmum
+        ? $items->unique(fn ($it) => $it->lab_id.'|'.mb_strtolower(trim($it->nama)))->values()
+        : $items;
+    foreach ($itemSource as $it) {
         $cascade['items'][] = ['id' => $it->id, 'nama' => $it->nama, 'lab_id' => $it->lab_id, 'lab_table_id' => $it->lab_table_id];
     }
 @endphp
@@ -32,6 +39,7 @@
         @error('lab_id')<p class="form-error">{{ $message }}</p>@enderror
     </div>
 
+    @if($type->requiresPlacement())
     <div>
         <label class="form-label">Kelompok</label>
         <select name="lab_group_id" data-cascade-group data-selected="{{ old('lab_group_id', $report?->lab_group_id) }}" class="form-select">
@@ -47,6 +55,7 @@
         </select>
         @error('lab_table_id')<p class="form-error">{{ $message }}</p>@enderror
     </div>
+    @endif
 
     <div>
         <label class="form-label">Barang <span class="text-red-500">*</span></label>
@@ -81,5 +90,5 @@
 
 <div class="mt-6 flex gap-3">
     <button class="btn-primary">{{ $report ? 'Simpan Perubahan' : 'Kirim Laporan' }}</button>
-    <a href="{{ route('sekretaris.reports.index') }}" class="btn-secondary">Batal</a>
+    <a href="{{ url()->previous(route('sekretaris.reports.index')) }}" class="btn-secondary">Batal</a>
 </div>

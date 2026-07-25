@@ -12,7 +12,7 @@
                 <select name="item_id" class="form-select" required>
                     <option value="">— Pilih Barang —</option>
                     @foreach($items as $i)
-                        <option value="{{ $i->id }}" @selected(old('item_id') == $i->id)>{{ $i->nama }} (tercatat: {{ $i->jumlah_total }})</option>
+                        <option value="{{ $i->id }}" @selected(in_array(old('item_id'), $i->ids))>{{ $i->nama }} (tercatat: {{ $i->jumlah_total }})</option>
                     @endforeach
                 </select>
                 @error('item_id')<p class="form-error">{{ $message }}</p>@enderror
@@ -39,7 +39,7 @@
             </label>
             <div class="flex gap-3">
                 <button class="btn-primary">Simpan Audit</button>
-                <a href="{{ route('admin.audits.index') }}" class="btn-secondary">Batal</a>
+                <a href="{{ url()->previous(route('admin.audits.index')) }}" class="btn-secondary">Batal</a>
             </div>
         </form>
     </div>

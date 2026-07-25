@@ -39,10 +39,7 @@ class RepairController extends Controller
             : null;
 
         return view('admin.repairs.create', [
-'items' => Item::select('id', 'nama')
-    ->groupBy('nama', 'id')
-    ->orderBy('nama')
-    ->get(),
+            'items' => Item::groupedByName(),
             'statuses' => RepairStatus::options(),
             'report' => $report,
         ]);
@@ -81,10 +78,7 @@ class RepairController extends Controller
     {
         return view('admin.repairs.edit', [
             'repair' => $repair,
-'items' => Item::select('id', 'nama')
-    ->groupBy('nama', 'id')
-    ->orderBy('nama')
-    ->get(),
+            'items' => Item::groupedByName(),
             'statuses' => RepairStatus::options(),
         ]);
     }
@@ -106,7 +100,7 @@ class RepairController extends Controller
             $repair->report?->update(['status' => ReportStatus::SELESAI]);
         }
 
-        return redirect()->route('admin.repairs.index')
+        return $this->backToList('admin.repairs.index')
             ->with('success', 'Riwayat perbaikan berhasil diperbarui.');
     }
 
@@ -114,7 +108,7 @@ class RepairController extends Controller
     {
         $repair->delete();
 
-        return redirect()->route('admin.repairs.index')
+        return back()
             ->with('success', 'Riwayat perbaikan berhasil dihapus.');
     }
 }

@@ -7,7 +7,16 @@
 
     <title>@yield('title', 'Dashboard') — {{ config('app.name') }}</title>
 
-    <link rel="icon" type="image/png" href="{{ asset('images/favicon1.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('images/favicon.png') }}">
+
+    {{-- Progressive Web App (bisa dipasang ke layar utama HP & desktop) --}}
+    <link rel="manifest" href="{{ asset('manifest.webmanifest') }}">
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Inventaris">
+    <link rel="apple-touch-icon" href="{{ asset('images/apple-touch-icon.png') }}">
 
     {{-- Cegah flash dark mode sebelum JS termuat --}}
     <script>
@@ -32,7 +41,7 @@
         <aside data-sidebar
                class="fixed inset-y-0 left-0 z-40 w-64 -translate-x-full transform overflow-y-auto border-r border-gray-200 bg-white transition-transform duration-200 dark:border-gray-700 dark:bg-gray-800 lg:translate-x-0">
             <div class="flex h-16 items-center gap-2 border-b border-gray-200 px-5 dark:border-gray-700">
-                <span class="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-600 font-bold text-white">IT</span>
+                <img src="{{ asset('images/logo.jpg') }}" alt="Logo Inventaris TKJ" class="h-9 w-9 rounded-lg object-cover">
                 <div class="leading-tight">
                     <p class="text-sm font-bold">Inventaris</p>
                     <p class="text-xs text-gray-500 dark:text-gray-400">TKJ</p>

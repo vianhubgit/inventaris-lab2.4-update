@@ -30,7 +30,7 @@ class StockAuditController extends Controller
     public function create(): View
     {
         return view('admin.audits.create', [
-            'items' => Item::orderBy('nama')->get(),
+            'items' => Item::groupedByName(),
         ]);
     }
 
@@ -45,7 +45,9 @@ class StockAuditController extends Controller
         ]);
 
         $item = Item::findOrFail($data['item_id']);
-        $tercatat = $item->jumlah_total;
+        // Barang bernama sama digabung sebagai satu, jadi jumlah tercatat
+        // dihitung dari total seluruh barang dengan nama yang sama.
+        $tercatat = Item::where('nama', $item->nama)->sum('jumlah_total');
         $fisik = (int) $data['jumlah_fisik'];
 
         $audit = StockAudit::create([
@@ -61,8 +63,17 @@ class StockAuditController extends Controller
         ActivityLogger::created($audit, "Audit stok \"{$item->nama}\": tercatat {$tercatat}, fisik {$fisik}.");
 
         // Opsional: sinkronkan jumlah tercatat ke hasil fisik.
+        // Hanya diterapkan bila barang bernama sama cuma satu record, karena
+        // jika ada beberapa lokasi tidak jelas ke record mana harus disimpan.
+        $jumlahRecord = Item::where('nama', $item->nama)->count();
+
         if ($request->boolean('sinkronkan') && $fisik !== $tercatat) {
-            $item->update(['jumlah_total' => $fisik]);
+            if ($jumlahRecord === 1) {
+                $item->update(['jumlah_total' => $fisik]);
+            } else {
+                return redirect()->route('admin.audits.index')
+                    ->with('success', 'Audit inventaris berhasil dicatat. Sinkronisasi otomatis dilewati karena barang "'.$item->nama.'" tersebar di beberapa lokasi — silakan sesuaikan jumlah tiap barang secara manual.');
+            }
         }
 
         return redirect()->route('admin.audits.index')
@@ -73,7 +84,7 @@ class StockAuditController extends Controller
     {
         $audit->delete();
 
-        return redirect()->route('admin.audits.index')
+        return back()
             ->with('success', 'Data audit berhasil dihapus.');
     }
 }

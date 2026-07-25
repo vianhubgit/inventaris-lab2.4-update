@@ -42,6 +42,8 @@ class ProcurementController extends Controller
     {
         $data = $request->validate([
             'status' => ['required', Rule::enum(ProcurementStatus::class)],
+            // Admin boleh menyetujui jumlah lebih kecil dari yang diminta.
+            'jumlah_disetujui' => ['nullable', 'integer', 'min:0', 'max:'.$procurement->jumlah],
             'catatan_admin' => ['nullable', 'string', 'max:1000'],
         ]);
 

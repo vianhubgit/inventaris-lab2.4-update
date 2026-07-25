@@ -4,7 +4,7 @@
 @section('page-title', 'Pengajuan #' . $procurement->id)
 
 @section('actions')
-    <a href="{{ route('sekretaris.procurements.index') }}" class="btn-secondary">Kembali</a>
+    <a href="{{ url()->previous(route('sekretaris.procurements.index')) }}" class="btn-secondary">Kembali</a>
 @endsection
 
 @section('content')
@@ -12,9 +12,9 @@
         <dl class="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div><dt class="text-xs uppercase text-gray-400">Barang</dt><dd class="font-medium">{{ $procurement->nama_barang }}</dd></div>
             <div><dt class="text-xs uppercase text-gray-400">Status</dt><dd><x-badge :class="$procurement->status->badge()">{{ $procurement->status->label() }}</x-badge></dd></div>
-            <div><dt class="text-xs uppercase text-gray-400">Jenis</dt><dd>{{ $procurement->is_new_item ? 'Barang Baru' : 'Barang Sudah Ada' }}</dd></div>
-            <div><dt class="text-xs uppercase text-gray-400">Jumlah</dt><dd class="font-medium">{{ $procurement->jumlah }}</dd></div>
-            <div><dt class="text-xs uppercase text-gray-400">Kategori</dt><dd>{{ $procurement->category?->nama ?? '—' }}</dd></div>
+            <div><dt class="text-xs uppercase text-gray-400">Kelas Peminjam</dt><dd class="font-medium">{{ $procurement->kelas ?? '—' }}</dd></div>
+            <div><dt class="text-xs uppercase text-gray-400">Jumlah Diminta</dt><dd class="font-medium">{{ $procurement->jumlah }}</dd></div>
+            <div><dt class="text-xs uppercase text-gray-400">Jumlah Disetujui</dt><dd class="font-medium">{{ $procurement->jumlah_disetujui ?? '—' }}</dd></div>
             <div><dt class="text-xs uppercase text-gray-400">Tanggal</dt><dd>{{ $procurement->requested_at?->translatedFormat('d F Y H:i') }}</dd></div>
             <div class="sm:col-span-2"><dt class="text-xs uppercase text-gray-400">Alasan</dt><dd>{{ $procurement->alasan }}</dd></div>
             @if($procurement->catatan_admin)

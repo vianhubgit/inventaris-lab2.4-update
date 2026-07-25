@@ -8,6 +8,13 @@
     </div>
 
     <div class="flex items-center gap-3">
+        {{-- Instal aplikasi (PWA) --}}
+        <button type="button" data-pwa-install
+                class="rounded-lg p-2 text-gray-500 hover:bg-brand-50 hover:text-brand-600 dark:hover:bg-brand-900/30"
+                title="Instal / Download aplikasi" aria-label="Instal aplikasi">
+            <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        </button>
+
         {{-- Notifikasi --}}
         @include('layouts.partials.notifications')
 
@@ -18,8 +25,8 @@
         </button>
 
         {{-- User --}}
-        <div class="flex items-center gap-3 border-l border-gray-200 pl-3 dark:border-gray-700">
-            <div class="text-right leading-tight">
+        <div class="flex items-center gap-3 border-l border-gray-200 pl-2 dark:border-gray-700 sm:pl-3">
+            <div class="hidden text-right leading-tight sm:block">
                 <p class="text-sm font-semibold">{{ auth()->user()->name }}</p>
                 <p class="text-xs capitalize text-gray-500 dark:text-gray-400">{{ auth()->user()->role->label() }}</p>
             </div>

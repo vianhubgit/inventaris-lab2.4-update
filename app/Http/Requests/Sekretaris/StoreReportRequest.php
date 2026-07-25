@@ -17,6 +17,17 @@ class StoreReportRequest extends FormRequest
         return $this->user()?->can('create', \App\Models\Report::class) ?? false;
     }
 
+    /** Laporan umum bersifat universal: tanpa kelompok & meja (jumlah tetap diisi). */
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('type') === ReportType::UMUM->value) {
+            $this->merge([
+                'lab_group_id' => null,
+                'lab_table_id' => null,
+            ]);
+        }
+    }
+
     public function rules(): array
     {
         return [

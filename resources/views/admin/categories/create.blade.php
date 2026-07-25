@@ -19,7 +19,7 @@
             </div>
             <div class="flex gap-3">
                 <button class="btn-primary">Simpan</button>
-                <a href="{{ route('admin.categories.index') }}" class="btn-secondary">Batal</a>
+                <a href="{{ url()->previous(route('admin.categories.index')) }}" class="btn-secondary">Batal</a>
             </div>
         </form>
     </div>

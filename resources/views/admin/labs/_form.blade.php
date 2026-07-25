@@ -1,3 +1,4 @@
+    <input type="hidden" name="_prev" value="{{ url()->previous() }}">
 @php($lab = $lab ?? null)
 
 <div class="space-y-4">
@@ -32,5 +33,5 @@
 
 <div class="mt-6 flex gap-3">
     <button class="btn-primary">{{ $lab ? 'Simpan Perubahan' : 'Tambah Lab' }}</button>
-    <a href="{{ route('admin.labs.index') }}" class="btn-secondary">Batal</a>
+    <a href="{{ url()->previous(route('admin.labs.index')) }}" class="btn-secondary">Batal</a>
 </div>
